@@ -1,13 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-import NovoPedido from './src/screens/NovoPedido';
+import { useState } from 'react';
+import Login from './src/screens/Login';
+import Pedidos from './src/screens/Pedidos';
 
 export default function App() {
-  return (
-    <SafeAreaProvider>
-      <NovoPedido />
-      <StatusBar style="dark" />
-    </SafeAreaProvider>
-  );
+  const [usuario, setUsuario] = useState<string | null>(null);
+
+  if (!usuario) return <Login onLogin={setUsuario} />;
+  return <Pedidos usuario={usuario} onSair={() => setUsuario(null)} />;
 }
