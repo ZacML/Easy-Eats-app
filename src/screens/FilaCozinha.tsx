@@ -1,164 +1,144 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { listarPedidos, listarProdutos, logout, Pedido, Produto } from '../services/api';
 
-type Pedido = { id: string; mesa: string; itens: string[] };
+type Coluna = 'ABERTO' | 'EM_PREPARO' | 'FINALIZADO';
 
-const aguardando: Pedido[] = [];
-const emPreparo: Pedido[] = [];
-const prontos: Pedido[] = [];
-
-const RESUMO = [
-  { rotulo: 'Aguardando', valor: aguardando.length, icone: '⏳', fundo: '#fef3c7', cor: '#d97706' },
-  { rotulo: 'Em Preparo', valor: emPreparo.length, icone: '🍳', fundo: '#ffedd5', cor: '#ea580c' },
-  { rotulo: 'Prontos', valor: prontos.length, icone: '✓', fundo: '#dcfce7', cor: '#16a34a' },
-];
-
-function ListaPedidos({ titulo, pedidos, vazio }: { titulo: string; pedidos: Pedido[]; vazio: string }) {
-  return (
-    <View style={styles.painel}>
-      <Text style={styles.painelTitulo}>{titulo}</Text>
-      {pedidos.length === 0 ? (
-        <Text style={styles.vazio}>{vazio}</Text>
-      ) : (
-        pedidos.map((p) => (
-          <View key={p.id} style={styles.pedido}>
-            <Text style={styles.pedidoMesa}>{p.mesa}</Text>
-            <Text style={styles.pedidoItens}>{p.itens.join(', ')}</Text>
-          </View>
-        ))
-      )}
-    </View>
-  );
-}
+const TITULOS: Record<Coluna, string> = {
+  ABERTO: 'Aguardando',
+  EM_PREPARO: 'Em preparo',
+  FINALIZADO: 'Prontos',
+};
 
 export default function FilaCozinha() {
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+
+  const carregar = useCallback(async () => {
+    try {
+      setErro('');
+      setCarregando(true);
+      const [pedidosApi, produtosApi] = await Promise.all([
+        listarPedidos(),
+        listarProdutos(),
+      ]);
+      setPedidos(pedidosApi);
+      setProdutos(produtosApi);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível carregar a fila.');
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  const nomes = useMemo(
+    () => new Map(produtos.map((p) => [p.id, p.nome])),
+    [produtos],
+  );
+
+  function descricaoItens(pedido: Pedido) {
+    return pedido.itens
+      .map((item) => `${item.quantidade}x ${nomes.get(item.produtoId) ?? `Produto #${item.produtoId}`}`)
+      .join(', ');
+  }
+
+  function pedidosDaColuna(status: Coluna) {
+    return pedidos.filter((p) => p.status === status);
+  }
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.iconBtn}><Text style={styles.iconTxt}>☾</Text></View>
-        <View style={styles.iconBtn}>
-          <Text style={styles.iconTxt}>🔔</Text>
-          <View style={styles.badge}><Text style={styles.badgeTxt}>2</Text></View>
-        </View>
-        <View style={styles.usuario}>
-          <View style={styles.avatar}><Text style={styles.avatarTxt}>A</Text></View>
-          <View>
-            <Text style={styles.usuarioNome}>Administrador</Text>
-            <Text style={styles.usuarioPapel}>ADMINISTRADOR</Text>
-          </View>
-        </View>
-        <View style={styles.iconBtn}><Text style={styles.iconTxt}>⎋</Text></View>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <View style={s.header}>
+        <Text style={s.tituloHeader}>Fila da Cozinha</Text>
+        <TouchableOpacity style={s.botao} onPress={carregar}>
+          <Feather name="refresh-cw" size={17} color="#374151" />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.botao} onPress={logout}>
+          <Feather name="log-out" size={17} color="#374151" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Fila da Cozinha</Text>
-        <Text style={styles.subtitle}>Acompanhe o preparo dos pedidos em andamento</Text>
+      <ScrollView contentContainerStyle={s.content}>
+        <Text style={s.title}>Pedidos</Text>
+        <Text style={s.subtitle}>Dados atualizados diretamente pela API.</Text>
 
-        <View style={styles.resumo}>
-          {RESUMO.map((r) => (
-            <View key={r.rotulo} style={styles.card}>
-              <View style={[styles.cardIcone, { backgroundColor: r.fundo }]}>
-                <Text style={[styles.cardIconeTxt, { color: r.cor }]}>{r.icone}</Text>
+        {erro !== '' && (
+          <View style={s.erroBox}>
+            <Text style={s.erro}>{erro}</Text>
+            <TouchableOpacity onPress={carregar}>
+              <Text style={s.tentar}>Tentar novamente</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {carregando ? (
+          <ActivityIndicator size="large" style={{ marginTop: 30 }} />
+        ) : (
+          (['ABERTO', 'EM_PREPARO', 'FINALIZADO'] as Coluna[]).map((status) => {
+            const lista = pedidosDaColuna(status);
+
+            return (
+              <View key={status} style={s.painel}>
+                <View style={s.painelTituloLinha}>
+                  <Text style={s.painelTitulo}>{TITULOS[status]}</Text>
+                  <Text style={s.contador}>{lista.length}</Text>
+                </View>
+
+                {lista.length === 0 ? (
+                  <Text style={s.vazio}>Nenhum pedido.</Text>
+                ) : (
+                  lista.map((pedido) => (
+                    <View key={pedido.id} style={s.pedido}>
+                      <Text style={s.pedidoTitulo}>Pedido #{pedido.id}</Text>
+                      <Text style={s.pedidoDestino}>
+                        {pedido.mesa || pedido.cliente || 'Sem identificação'}
+                      </Text>
+                      <Text style={s.pedidoItens}>{descricaoItens(pedido)}</Text>
+                    </View>
+                  ))
+                )}
               </View>
-              <View>
-                <Text style={styles.cardValor}>{r.valor}</Text>
-                <Text style={styles.cardRotulo}>{r.rotulo}</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })
+        )}
+
+        <View style={s.painel}>
+          <Text style={s.painelTitulo}>Cancelados</Text>
+          <Text style={s.vazio}>
+            {pedidos.filter((p) => p.status === 'CANCELADO').length} pedido(s)
+          </Text>
         </View>
-
-        <ListaPedidos
-          titulo="Pedidos em Andamento"
-          pedidos={[...aguardando, ...emPreparo]}
-          vazio="Nenhum pedido em andamento no momento."
-        />
-        <ListaPedidos titulo="Prontos para Entrega" pedidos={prontos} vazio="Nenhum pedido pronto no momento." />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const BORDA = '#e5e7eb';
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f6f7f9' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: BORDA,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: BORDA,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconTxt: { fontSize: 16, color: '#374151' },
-  badge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#dc2626',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  badgeTxt: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  usuario: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 4 },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: '#ffedd5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarTxt: { color: '#ea580c', fontWeight: '700' },
-  usuarioNome: { fontSize: 13, fontWeight: '800', color: '#0f172a' },
-  usuarioPapel: { fontSize: 10, fontWeight: '800', color: '#7c3aed' },
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F6F7F9' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  tituloHeader: { flex: 1, fontSize: 17, fontWeight: '800', color: '#0F172A' },
+  botao: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 32 },
-  title: { fontSize: 30, fontWeight: '800', color: '#0f172a' },
-  subtitle: { fontSize: 15, color: '#6b7280', marginTop: 6, marginBottom: 20 },
-  resumo: { gap: 12, marginBottom: 16 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDA,
-    padding: 16,
-  },
-  cardIcone: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  cardIconeTxt: { fontSize: 16, fontWeight: '700' },
-  cardValor: { fontSize: 22, fontWeight: '800', color: '#0f172a' },
-  cardRotulo: { fontSize: 14, color: '#6b7280' },
-  painel: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDA,
-    padding: 18,
-    marginBottom: 16,
-  },
-  painelTitulo: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 14 },
-  vazio: { textAlign: 'center', color: '#9ca3af', fontSize: 14, paddingVertical: 8 },
-  pedido: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  pedidoMesa: { fontWeight: '700', color: '#111827' },
-  pedidoItens: { color: '#6b7280', marginTop: 2 },
+  title: { fontSize: 30, fontWeight: '800', color: '#0F172A' },
+  subtitle: { fontSize: 15, color: '#6B7280', marginTop: 6, marginBottom: 20 },
+  erroBox: { padding: 12, borderRadius: 10, backgroundColor: '#FEF2F2', marginBottom: 16 },
+  erro: { color: '#B91C1C' },
+  tentar: { marginTop: 8, color: '#EA580C', fontWeight: '700' },
+  painel: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 16 },
+  painelTituloLinha: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  painelTitulo: { flex: 1, fontSize: 16, fontWeight: '800', color: '#0F172A' },
+  contador: { minWidth: 28, textAlign: 'center', paddingVertical: 4, borderRadius: 12, backgroundColor: '#F1F5F9', color: '#334155', fontWeight: '700' },
+  vazio: { textAlign: 'center', color: '#9CA3AF', paddingVertical: 8 },
+  pedido: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  pedidoTitulo: { fontWeight: '800', color: '#111827' },
+  pedidoDestino: { marginTop: 3, fontWeight: '600', color: '#EA580C' },
+  pedidoItens: { marginTop: 4, color: '#6B7280', lineHeight: 19 },
 });
