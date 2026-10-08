@@ -1,33 +1,11 @@
+import type { Produto } from '../types/produto';
+import type { Pedido, ItemPedido } from '../types/pedido';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8080';
 
 type LoginResponse = {
   username?: string;
   roles?: string[];
-};
-
-export type Produto = {
-  id: number;
-  nome: string;
-  descricao: string;
-  preco: number;
-};
-
-export type ItemPedido = {
-  id?: number;
-  pedidoId?: number;
-  produtoId: number;
-  quantidade: number;
-  valorUnitario?: number;
-};
-
-export type Pedido = {
-  id: number;
-  dataCriacao: string;
-  dataAlteracao?: string;
-  mesa?: string;
-  cliente?: string;
-  status: 'ABERTO' | 'EM_PREPARO' | 'FINALIZADO' | 'CANCELADO';
-  itens: ItemPedido[];
 };
 
 let credentials: { username: string; password: string } | null = null;
@@ -53,7 +31,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (response.status === 204) {
-    return [] as T;
+    return undefined as T;
   }
 
   if (!response.ok) {

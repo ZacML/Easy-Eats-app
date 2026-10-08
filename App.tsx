@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import Login from './src/screens/Login';
-import Pedidos from './src/screens/Pedidos';
+import { NavigationContainer } from '@react-navigation/native';
+import { AppNavigator } from './src/navigation/AppNavigator';
 
 export default function App() {
-  const [usuario, setUsuario] = useState<string | null>(null);
-
-  if (!usuario) return <Login onLogin={setUsuario} />;
-  return <Pedidos usuario={usuario} onSair={() => setUsuario(null)} />;
+  return (
+    <NavigationContainer>
+      <AppNavigator />
+    </NavigationContainer>
+  );
 }

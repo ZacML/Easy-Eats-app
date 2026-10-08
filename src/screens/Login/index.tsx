@@ -6,18 +6,16 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   StatusBar,
-  Platform,
 } from 'react-native';
 import { login as loginApi } from '../../services/api';
+import { styles, LARANJA } from './styles';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/AppNavigator';
 
-type Props = { onLogin: (username: string) => void };
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-const LARANJA = '#EA580C';
-const TOPO = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 50;
-
-export default function Login({ onLogin }: Props) {
+export default function Login({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [verSenha, setVerSenha] = useState(false);
@@ -34,7 +32,7 @@ export default function Login({ onLogin }: Props) {
       setErro('');
       setCarregando(true);
       await loginApi(email.trim(), senha);
-      onLogin(email.trim());
+      navigation.replace('Pedidos');
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível entrar.');
     } finally {
@@ -43,27 +41,27 @@ export default function Login({ onLogin }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.tela} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.tela} keyboardShouldPersistTaps="handled">
       <StatusBar barStyle="light-content" />
-      <View style={s.topo}>
-        <View style={s.logo}>
+      <View style={styles.topo}>
+        <View style={styles.logo}>
           <Feather name="truck" size={30} color={LARANJA} />
         </View>
-        <Text style={s.marca}>EasyEats</Text>
-        <Text style={s.slogan}>
+        <Text style={styles.marca}>EasyEats</Text>
+        <Text style={styles.slogan}>
           O jeito mais simples de operar seu food truck, do pedido ao caixa.
         </Text>
       </View>
 
-      <View style={s.form}>
-        <Text style={s.titulo}>Bem-vindo de volta</Text>
-        <Text style={s.subtitulo}>Entre com sua conta para continuar</Text>
+      <View style={styles.form}>
+        <Text style={styles.titulo}>Bem-vindo de volta</Text>
+        <Text style={styles.subtitulo}>Entre com sua conta para continuar</Text>
 
-        <Text style={s.label}>Usuário</Text>
-        <View style={s.campo}>
+        <Text style={styles.label}>Usuário</Text>
+        <View style={styles.campo}>
           <Feather name="mail" size={16} color="#94A3B8" />
           <TextInput
-            style={s.input}
+            style={styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="seu usuário"
@@ -71,14 +69,14 @@ export default function Login({ onLogin }: Props) {
           />
         </View>
 
-        <View style={s.linha}>
-          <Text style={s.label}>Senha</Text>
+        <View style={styles.linha}>
+          <Text style={styles.label}>Senha</Text>
         </View>
 
-        <View style={s.campo}>
+        <View style={styles.campo}>
           <Feather name="lock" size={16} color="#94A3B8" />
           <TextInput
-            style={s.input}
+            style={styles.input}
             value={senha}
             onChangeText={setSenha}
             placeholder="Sua senha"
@@ -91,31 +89,13 @@ export default function Login({ onLogin }: Props) {
           </TouchableOpacity>
         </View>
 
-        {erro !== '' && <Text style={s.erro}>{erro}</Text>}
+        {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
 
-        <TouchableOpacity style={s.botao} onPress={entrar} disabled={carregando}>
-          <Text style={s.botaoTexto}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
+        <TouchableOpacity style={styles.botao} onPress={entrar} disabled={carregando}>
+          <Text style={styles.botaoTexto}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
           {!carregando && <Feather name="arrow-right" size={16} color="#fff" />}
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
-const s = StyleSheet.create({
-  tela: { flexGrow: 1, backgroundColor: '#fff' },
-  topo: { backgroundColor: '#1E232B', padding: 28, paddingTop: TOPO + 40, paddingBottom: 44 },
-  logo: { width: 60, height: 60, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  marca: { fontSize: 30, fontWeight: 'bold', color: '#fff' },
-  slogan: { fontSize: 15, lineHeight: 22, color: '#E2E8F0', marginTop: 8 },
-  form: { flex: 1, padding: 28, paddingTop: 32 },
-  titulo: { fontSize: 24, fontWeight: 'bold', color: '#0F172A' },
-  subtitulo: { fontSize: 14, color: '#64748B', marginTop: 4, marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 8 },
-  linha: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 },
-  campo: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#E8EEFC' },
-  input: { flex: 1, fontSize: 15, color: '#0F172A' },
-  erro: { marginTop: 16, padding: 10, borderRadius: 10, fontSize: 14, color: '#B91C1C', backgroundColor: '#FEF2F2' },
-  botao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 10, backgroundColor: LARANJA, marginTop: 24 },
-  botaoTexto: { fontSize: 15, fontWeight: '600', color: '#fff' },
-});
