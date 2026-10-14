@@ -5,9 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   StatusBar,
-  Platform,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -18,15 +16,15 @@ import {
   listarProdutos,
   listarMesas,
   logout,
-  Categoria,
-  Produto,
-  Mesa,
 } from '../../services/api';
+import { styles, LARANJA } from './styles';
+import type { Produto } from '../../types/produto';
+import type { Categoria } from '../../types/categoria';
+import type { Mesa } from '../../types/mesa';
 
 type Props = { usuario?: string; onSair?: () => void };
 
-const LARANJA = '#EA580C';
-const TOPO = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 50;
+
 const moeda = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
 export default function Pedidos({ usuario = '', onSair }: Props) {
@@ -142,17 +140,17 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
   }
 
   return (
-    <View style={s.tela}>
+    <View style={styles.tela}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={s.barra}>
-        <Text style={s.marca}>EasyEats</Text>
-        <View style={s.barraDireita}>
-          <View style={s.avatar}>
-            <Text style={s.avatarTexto}>{usuario ? usuario.charAt(0).toUpperCase() : '?'}</Text>
+      <View style={styles.barra}>
+        <Text style={styles.marca}>EasyEats</Text>
+        <View style={styles.barraDireita}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarTexto}>{usuario ? usuario.charAt(0).toUpperCase() : '?'}</Text>
           </View>
           <TouchableOpacity
-            style={s.botaoIcone}
+            style={styles.botaoIcone}
             onPress={() => {
               logout();
               onSair?.();
@@ -163,25 +161,25 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={s.conteudo} keyboardShouldPersistTaps="handled">
-        <Text style={s.titulo}>Novo Pedido</Text>
-        <Text style={s.subtitulo}>Produtos carregados diretamente da API.</Text>
+      <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
+        <Text style={styles.titulo}>Novo Pedido</Text>
+        <Text style={styles.subtitulo}>Produtos carregados diretamente da API.</Text>
 
-        <View style={s.comboboxContainer}>
+        <View style={styles.comboboxContainer}>
 
-          <Text style={s.comboboxLabel}>
+          <Text style={styles.comboboxLabel}>
             Mesa
           </Text>
 
           <TouchableOpacity
-            style={s.combobox}
+            style={styles.combobox}
             onPress={() => setMesaAberta(!mesaAberta)}
           >
 
             <Text
               style={[
-                s.comboboxTexto,
-                mesaSelecionada == null && s.placeholder,
+                styles.comboboxTexto,
+                mesaSelecionada == null && styles.placeholder,
               ]}
             >
               {mesaSelecionada == null
@@ -205,11 +203,11 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
 
           {mesaAberta && (
 
-            <View style={s.listaMesas}>
+            <View style={styles.listaMesas}>
 
               {mesas.length === 0 ? (
 
-                <Text style={s.semMesas}>
+                <Text style={styles.semMesas}>
                   Nenhuma mesa cadastrada.
                 </Text>
 
@@ -220,9 +218,9 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
                   <TouchableOpacity
                     key={mesaItem.id}
                     style={[
-                      s.opcaoMesa,
+                      styles.opcaoMesa,
                       mesaSelecionada === mesaItem.id &&
-                        s.opcaoMesaSelecionada,
+                        styles.opcaoMesaSelecionada,
                     ]}
                     onPress={() => {
 
@@ -234,7 +232,7 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
                     }}
                   >
 
-                    <View style={s.mesaIcone}>
+                    <View style={styles.mesaIcone}>
                       <Feather
                         name="grid"
                         size={16}
@@ -242,7 +240,7 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
                       />
                     </View>
 
-                    <Text style={s.opcaoMesaTexto}>
+                    <Text style={styles.opcaoMesaTexto}>
                       Mesa {mesaItem.numero}
                     </Text>
 
@@ -267,17 +265,17 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
         </View>
 
         <TextInput
-          style={[s.campo, { marginTop: 12 }]}
+          style={[styles.campo, { marginTop: 12 }]}
           value={cliente}
           onChangeText={setCliente}
           placeholder="Nome do cliente (opcional)"
         />
 
         {erro !== '' && (
-          <View style={s.erroBox}>
-            <Text style={s.erro}>{erro}</Text>
+          <View style={styles.erroBox}>
+            <Text style={styles.erro}>{erro}</Text>
             <TouchableOpacity onPress={carregarProdutos}>
-              <Text style={s.tentar}>Tentar novamente</Text>
+              <Text style={styles.tentar}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -286,22 +284,22 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.categorias}
+            contentContainerStyle={styles.categorias}
           >
             <TouchableOpacity
-              style={[s.categoria, categoriaSelecionada == null && s.categoriaAtiva]}
+              style={[styles.categoria, categoriaSelecionada == null && styles.categoriaAtiva]}
               onPress={() => setCategoriaSelecionada(null)}
             >
-              <Text style={[s.categoriaTexto, categoriaSelecionada == null && s.categoriaTextoAtivo]}>Todos</Text>
+              <Text style={[styles.categoriaTexto, categoriaSelecionada == null && styles.categoriaTextoAtivo]}>Todos</Text>
             </TouchableOpacity>
 
             {categorias.map((categoria) => (
               <TouchableOpacity
                 key={categoria.id}
-                style={[s.categoria, categoriaSelecionada === categoria.id && s.categoriaAtiva]}
+                style={[styles.categoria, categoriaSelecionada === categoria.id && styles.categoriaAtiva]}
                 onPress={() => setCategoriaSelecionada(categoria.id)}
               >
-                <Text style={[s.categoriaTexto, categoriaSelecionada === categoria.id && s.categoriaTextoAtivo]}>
+                <Text style={[styles.categoriaTexto, categoriaSelecionada === categoria.id && styles.categoriaTextoAtivo]}>
                   {categoria.nome}
                 </Text>
               </TouchableOpacity>
@@ -312,35 +310,35 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
         {carregando ? (
           <ActivityIndicator size="large" color={LARANJA} style={{ marginTop: 32 }} />
         ) : produtos.length === 0 ? (
-          <Text style={s.vazio}>Nenhum produto ativo encontrado.</Text>
+          <Text style={styles.vazio}>Nenhum produto ativo encontrado.</Text>
         ) : produtosFiltrados.length === 0 ? (
-          <Text style={s.vazio}>Nenhum produto nesta categoria.</Text>
+          <Text style={styles.vazio}>Nenhum produto nesta categoria.</Text>
         ) : (
-          <View style={s.grade}>
+          <View style={styles.grade}>
             {produtosFiltrados.map((p) => {
               const qtd = carrinho[p.id] ?? 0;
 
               return (
-                <View key={p.id} style={[s.card, qtd > 0 && { borderColor: LARANJA }]}>
+                <View key={p.id} style={[styles.card, qtd > 0 && { borderColor: LARANJA }]}>
                   <TouchableOpacity onPress={() => mudar(p.id, 1)}>
-                    <Text style={s.nome}>{p.nome}</Text>
-                    <Text style={s.descricao}>{p.descricao}</Text>
-                    <Text style={s.preco}>{moeda(p.preco)}</Text>
+                    <Text style={styles.nome}>{p.nome}</Text>
+                    <Text style={styles.descricao}>{p.descricao}</Text>
+                    <Text style={styles.preco}>{moeda(p.preco)}</Text>
                   </TouchableOpacity>
 
-                  <View style={s.cardBase}>
+                  <View style={styles.cardBase}>
                     {qtd > 0 ? (
-                      <View style={s.stepper}>
+                      <View style={styles.stepper}>
                         <TouchableOpacity onPress={() => mudar(p.id, -1)}>
                           <Feather name="minus" size={18} color={LARANJA} />
                         </TouchableOpacity>
-                        <Text style={s.qtd}>{qtd}</Text>
+                        <Text style={styles.qtd}>{qtd}</Text>
                         <TouchableOpacity onPress={() => mudar(p.id, 1)}>
                           <Feather name="plus" size={18} color={LARANJA} />
                         </TouchableOpacity>
                       </View>
                     ) : (
-                      <Text style={s.adicionar}>Adicionar</Text>
+                      <Text style={styles.adicionar}>Adicionar</Text>
                     )}
                   </View>
                 </View>
@@ -351,161 +349,16 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
       </ScrollView>
 
       {qtdTotal > 0 && (
-        <View style={s.rodape}>
+        <View style={styles.rodape}>
           <View>
-            <Text style={s.resumoQtd}>{qtdTotal} {qtdTotal === 1 ? 'item' : 'itens'}</Text>
-            <Text style={s.resumoTotal}>{moeda(total)}</Text>
+            <Text style={styles.resumoQtd}>{qtdTotal} {qtdTotal === 1 ? 'item' : 'itens'}</Text>
+            <Text style={styles.resumoTotal}>{moeda(total)}</Text>
           </View>
-          <TouchableOpacity style={s.botaoFinalizar} onPress={finalizar} disabled={enviando}>
-            <Text style={s.botaoFinalizarTexto}>{enviando ? 'Enviando...' : 'Finalizar pedido'}</Text>
+          <TouchableOpacity style={styles.botaoFinalizar} onPress={finalizar} disabled={enviando}>
+            <Text style={styles.botaoFinalizarTexto}>{enviando ? 'Enviando...' : 'Finalizar pedido'}</Text>
           </TouchableOpacity>
         </View>
       )}
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: '#F8FAFC' },
-  barra: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: TOPO + 8, paddingBottom: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  marca: { fontSize: 18, fontWeight: 'bold', color: '#0F172A' },
-  barraDireita: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatar: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFEDD5', alignItems: 'center', justifyContent: 'center' },
-  avatarTexto: { fontWeight: 'bold', color: LARANJA },
-  botaoIcone: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  conteudo: { padding: 16, paddingBottom: 110 },
-  titulo: { fontSize: 28, fontWeight: 'bold', color: '#0F172A' },
-  subtitulo: { fontSize: 14, color: '#64748B', marginTop: 6, marginBottom: 18 },
-  campo: { height: 48, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0', color: '#0F172A' },
-  erroBox: { marginTop: 14, padding: 12, borderRadius: 10, backgroundColor: '#FEF2F2' },
-  erro: { color: '#B91C1C' },
-  tentar: { marginTop: 8, color: LARANJA, fontWeight: '700' },
-  categorias: { gap: 8, paddingVertical: 4, marginTop: 14 },
-  categoria: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0' },
-  categoriaAtiva: { backgroundColor: LARANJA, borderColor: LARANJA },
-  categoriaTexto: { color: '#64748B', fontSize: 13, fontWeight: '600' },
-  categoriaTextoAtivo: { color: '#fff' },
-  grade: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
-  card: { width: '48%', padding: 12, marginBottom: 12, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0' },
-  nome: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
-  descricao: { fontSize: 12, lineHeight: 17, color: '#64748B', marginTop: 6, minHeight: 34 },
-  preco: { fontSize: 14, fontWeight: 'bold', color: LARANJA, marginTop: 8 },
-  cardBase: { marginTop: 10, minHeight: 28, justifyContent: 'center' },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  qtd: { fontWeight: '700', color: '#0F172A' },
-  adicionar: { color: '#64748B', fontSize: 12 },
-  vazio: { textAlign: 'center', color: '#64748B', marginTop: 32 },
-  rodape: { padding: 16, paddingBottom: 24, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  resumoQtd: { fontSize: 12, color: '#64748B' },
-  resumoTotal: { fontSize: 18, fontWeight: 'bold', color: '#0F172A' },
-  botaoFinalizar: { height: 48, paddingHorizontal: 20, borderRadius: 10, backgroundColor: LARANJA, justifyContent: 'center' },
-  botaoFinalizarTexto: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  comboboxContainer: {
-  marginTop: 4,
-  position: 'relative',
-  zIndex: 10,
-},
-
-comboboxLabel: {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '#475569',
-  marginBottom: 6,
-},
-
-combobox: {
-  height: 48,
-  paddingHorizontal: 14,
-  borderRadius: 10,
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#E2E8F0',
-
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-},
-
-comboboxTexto: {
-  fontSize: 14,
-  color: '#0F172A',
-},
-
-placeholder: {
-  color: '#94A3B8',
-},
-
-listaMesas: {
-  position: 'absolute',
-  top: 76,
-  left: 0,
-  right: 0,
-
-  backgroundColor: '#fff',
-
-  borderWidth: 1,
-  borderColor: '#E2E8F0',
-
-  borderRadius: 10,
-
-  maxHeight: 220,
-
-  elevation: 5,
-
-  shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 2,
-  },
-  shadowOpacity: 0.1,
-  shadowRadius: 5,
-},
-
-opcaoMesa: {
-  minHeight: 48,
-  paddingHorizontal: 14,
-
-  flexDirection: 'row',
-  alignItems: 'center',
-
-  borderBottomWidth: 1,
-  borderBottomColor: '#F1F5F9',
-
-  gap: 10,
-},
-
-opcaoMesaSelecionada: {
-  backgroundColor: '#FFF7ED',
-},
-
-mesaIcone: {
-  width: 30,
-  height: 30,
-
-  borderRadius: 8,
-
-  backgroundColor: '#FFEDD5',
-
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
-opcaoMesaTexto: {
-  flex: 1,
-
-  fontSize: 14,
-  fontWeight: '600',
-
-  color: '#1E293B',
-},
-
-semMesas: {
-  padding: 16,
-
-  textAlign: 'center',
-
-  color: '#94A3B8',
-
-  fontSize: 13,
-},
-});

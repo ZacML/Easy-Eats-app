@@ -1,47 +1,10 @@
+import type { LoginResponse } from '../types/auth';
+import type { Produto } from '../types/produto';
+import type { Pedido } from '../types/pedido';
+import type { Categoria } from '../types/categoria';
+import type { Mesa } from '../types/mesa';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8080';
-
-type LoginResponse = {
-  username?: string;
-  roles?: string[];
-};
-
-export type Categoria = {
-  id: number;
-  nome: string;
-  flativo: string;
-};
-
-export type Produto = {
-  id: number;
-  nome: string;
-  descricao: string;
-  preco: number;
-  categoriaId: number;
-};
-
-export type ItemPedido = {
-  id?: number;
-  pedidoId?: number;
-  produtoId: number;
-  quantidade: number;
-  valorUnitario?: number;
-};
-
-export type Pedido = {
-  id: number;
-  dataCriacao: string;
-  dataAlteracao?: string;
-  mesa?: string;
-  cliente?: string;
-  status: 'ABERTO' | 'EM_PREPARO' | 'FINALIZADO' | 'CANCELADO';
-  itens: ItemPedido[];
-};
-
-export type Mesa = {
-  id: number;
-  numero: number;
-  flativo: string;
-};
 
 export async function listarMesas(): Promise<Mesa[]> {
   const mesas = await request<Mesa[]>('/mesa');
