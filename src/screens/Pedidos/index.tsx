@@ -21,13 +21,14 @@ import { styles, LARANJA } from './styles';
 import type { Produto } from '../../types/produto';
 import type { Categoria } from '../../types/categoria';
 import type { Mesa } from '../../types/mesa';
+import FiltroChips from '../../components/FiltroChips';
 
-type Props = { usuario?: string; onSair?: () => void };
+type Props = { usuario?: string; onSair?: () => void; onAbrirFila?: () => void };
 
 
 const moeda = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
-export default function Pedidos({ usuario = '', onSair }: Props) {
+export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<number | null>(null);
@@ -162,8 +163,39 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
-        <Text style={styles.titulo}>Novo Pedido</Text>
-        <Text style={styles.subtitulo}>Produtos carregados diretamente da API.</Text>
+
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}>
+          <Text style={styles.titulo}>Novo Pedido</Text>
+
+          <TouchableOpacity
+            onPress={onAbrirFila}
+            disabled={!onAbrirFila}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: LARANJA,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 8,
+              gap: 6,
+            }}
+          >
+            <Feather name="clipboard" size={17} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>
+              Fila
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.subtitulo}>
+          Produtos carregados diretamente da API.
+        </Text>
+
 
         <View style={styles.comboboxContainer}>
 
@@ -184,11 +216,10 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
             >
               {mesaSelecionada == null
                 ? 'Selecione uma mesa'
-                : `Mesa ${
-                    mesas.find(
-                      (mesa) => mesa.id === mesaSelecionada
-                    )?.numero
-                  }`
+                : `Mesa ${mesas.find(
+                  (mesa) => mesa.id === mesaSelecionada
+                )?.numero
+                }`
               }
             </Text>
 
@@ -220,7 +251,7 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
                     style={[
                       styles.opcaoMesa,
                       mesaSelecionada === mesaItem.id &&
-                        styles.opcaoMesaSelecionada,
+                      styles.opcaoMesaSelecionada,
                     ]}
                     onPress={() => {
 
@@ -281,30 +312,11 @@ export default function Pedidos({ usuario = '', onSair }: Props) {
         )}
 
         {!carregando && categorias.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categorias}
-          >
-            <TouchableOpacity
-              style={[styles.categoria, categoriaSelecionada == null && styles.categoriaAtiva]}
-              onPress={() => setCategoriaSelecionada(null)}
-            >
-              <Text style={[styles.categoriaTexto, categoriaSelecionada == null && styles.categoriaTextoAtivo]}>Todos</Text>
-            </TouchableOpacity>
-
-            {categorias.map((categoria) => (
-              <TouchableOpacity
-                key={categoria.id}
-                style={[styles.categoria, categoriaSelecionada === categoria.id && styles.categoriaAtiva]}
-                onPress={() => setCategoriaSelecionada(categoria.id)}
-              >
-                <Text style={[styles.categoriaTexto, categoriaSelecionada === categoria.id && styles.categoriaTextoAtivo]}>
-                  {categoria.nome}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <FiltroChips
+            opcoes={categorias}
+            selecionado={categoriaSelecionada}
+            onSelecionar={setCategoriaSelecionada}
+          />
         )}
 
         {carregando ? (

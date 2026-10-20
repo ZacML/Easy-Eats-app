@@ -1,10 +1,16 @@
 import type { LoginResponse } from '../types/auth';
 import type { Produto } from '../types/produto';
-import type { Pedido } from '../types/pedido';
+import type { Pedido, StatusPedido } from '../types/pedido';
 import type { Categoria } from '../types/categoria';
 import type { Mesa } from '../types/mesa';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8080';
+
+export async function atualizarStatusPedido(id: number, status: StatusPedido) {
+  return request<Pedido>(`/pedido/${id}/status/${status}`, {
+    method: 'PATCH',
+  });
+}
 
 export async function listarMesas(): Promise<Mesa[]> {
   const mesas = await request<Mesa[]>('/mesa');
