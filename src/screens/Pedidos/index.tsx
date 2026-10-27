@@ -350,7 +350,11 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
                         </TouchableOpacity>
                       </View>
                     ) : (
-                      <Text style={styles.adicionar}>Adicionar</Text>
+                      <TouchableOpacity onPress={() => mudar(p.id, 1)}>
+                        <Text style={[styles.adicionar, { color: LARANJA }]}>
+                          Adicionar
+                        </Text>
+                      </TouchableOpacity>
                     )}
                   </View>
                 </View>

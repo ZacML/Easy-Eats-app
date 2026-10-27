@@ -21,3 +21,8 @@ export type Pedido = {
   status: StatusPedido;
   itens: ItemPedido[];
 };
+
+export type PaginaPedidos = {
+  itens: Pedido[];
+  total: number;
+};

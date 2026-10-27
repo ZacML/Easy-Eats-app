@@ -1,4 +1,2 @@
-export type LoginResponse = {
-  username?: string;
-  roles?: string[];
-};
+
+export type LoginResponse = string;

@@ -1,6 +1,6 @@
 import type { LoginResponse } from '../types/auth';
 import type { Produto } from '../types/produto';
-import type { Pedido, StatusPedido } from '../types/pedido';
+import type { Pedido, StatusPedido, PaginaPedidos } from '../types/pedido';
 import type { Categoria } from '../types/categoria';
 import type { Mesa } from '../types/mesa';
 
@@ -20,13 +20,11 @@ export async function listarMesas(): Promise<Mesa[]> {
   );
 }
 
-let credentials: { username: string; password: string } | null = null;
+let token: string | null = null;
 
 function authHeaders() {
-  if (!credentials) throw new Error('Usuário não autenticado.');
-
   return {
-    Authorization: `Basic ${btoa(`${credentials.username}:${credentials.password}`)}`,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     'Content-Type': 'application/json',
   };
 }
@@ -47,18 +45,30 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
-export async function login(username: string, password: string): Promise<LoginResponse> {
-  const params = new URLSearchParams({ username, password });
-  const response = await fetch(`${API_URL}/usuarios/login?${params.toString()}`, { method: 'POST' });
+export async function login(
+  username: string,
+  password: string,
+): Promise<LoginResponse> {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ username, password }).toString(),
+  });
 
-  if (!response.ok) throw new Error('Usuário ou senha incorretos.');
+  if (!response.ok) {
+    const mensagem = await response.text();
+    throw new Error(mensagem || 'Falha no login.');
+  }
 
-  credentials = { username, password };
-  return response.json();
+  token = (await response.text()).trim();
+
+  return token;
 }
 
 export function logout() {
-  credentials = null;
+  token = null;
 }
 
 export async function listarCategorias(): Promise<Categoria[]> {
@@ -102,6 +112,25 @@ export async function criarPedido(
   });
 }
 
-export async function listarPedidos(): Promise<Pedido[]> {
-  return request<Pedido[]>('/pedido');
+export async function listarPedidos(status?: StatusPedido, antesDe?: string): Promise<Pedido[]> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (antesDe) params.set('antesDe', antesDe);
+  const query = params.toString();
+
+  return request<Pedido[]>(`/pedido${query ? `?${query}` : ''}`);
 }
+
+// export async function listarPedidosPaginado(
+//   params: { status: StatusPedido; offset: number; limit: number; data?: string },
+//   signal?: AbortSignal,
+// ): Promise<PaginaPedidos> {
+//   const query = new URLSearchParams({
+//     status: params.status,
+//     offset: String(params.offset),
+//     limit: String(params.limit),
+//   });
+//   if (params.data) query.set('data', params.data);
+
+//   return request<PaginaPedidos>(`/pedido?${query.toString()}`, { signal });
+// }

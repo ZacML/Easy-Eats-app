@@ -17,6 +17,10 @@ export default function App() {
     return (
       <FilaCozinha
         onVoltar={() => setTela('pedidos')}
+        onSair={() => {
+          setUsuario(null);
+          setTela('pedidos');
+        }}
       />
     );
   }

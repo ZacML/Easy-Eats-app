@@ -67,7 +67,7 @@ export const styles = StyleSheet.create({
     borderTopColor: "#F3F4F6",
   },
   pedidoInfo: { flex: 1 },
-  botaoAvancar: {
+  botaoFila: {
     width: 36,
     height: 36,
     borderRadius: 8,
@@ -80,4 +80,25 @@ export const styles = StyleSheet.create({
   pedidoTitulo: { fontWeight: "800", color: "#111827" },
   pedidoDestino: { marginTop: 3, fontWeight: "600", color: "#EA580C" },
   pedidoItens: { marginTop: 4, color: "#6B7280", lineHeight: 19 },
+
+  pedidoAcoes: { flexDirection: "row", alignItems: "center", gap: 8 },
+  botaoCancelar: { backgroundColor: "#FEF2F2", borderColor: "#FECACA" },
+
+  maisLinha: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    height: 40,
+    marginTop: 4,
+  },
+  // Linha tracejada (o wrapper recorta a borda inferior para funcionar no Android e no iOS)
+  tracoMais: { flex: 1, height: 1, overflow: "hidden" },
+  tracoMaisInterno: {
+    height: 2,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#FDBA74",
+    borderRadius: 1,
+  },
+  maisTexto: { color: "#EA580C", fontSize: 13, fontWeight: "600" },
 });
