@@ -4,7 +4,7 @@ import type { Pedido, StatusPedido, PaginaPedidos } from '../types/pedido';
 import type { Categoria } from '../types/categoria';
 import type { Mesa } from '../types/mesa';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8080';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.0.107:8080';
 
 export async function atualizarStatusPedido(id: number, status: StatusPedido) {
   return request<Pedido>(`/pedido/${id}/status/${status}`, {
@@ -121,16 +121,9 @@ export async function listarPedidos(status?: StatusPedido, antesDe?: string): Pr
   return request<Pedido[]>(`/pedido${query ? `?${query}` : ''}`);
 }
 
-// export async function listarPedidosPaginado(
-//   params: { status: StatusPedido; offset: number; limit: number; data?: string },
-//   signal?: AbortSignal,
-// ): Promise<PaginaPedidos> {
-//   const query = new URLSearchParams({
-//     status: params.status,
-//     offset: String(params.offset),
-//     limit: String(params.limit),
-//   });
-//   if (params.data) query.set('data', params.data);
-
-//   return request<PaginaPedidos>(`/pedido?${query.toString()}`, { signal });
-// }
+export async function registrarPushToken(pushToken: string) {
+  await request<unknown>('/dispositivos/push-token', {
+    method: 'POST',
+    body: JSON.stringify({ token: pushToken }),
+  });
+}
