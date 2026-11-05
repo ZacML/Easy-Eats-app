@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { login as loginApi } from '../../services/api';
 import { styles, LARANJA } from './styles';
+import { registrarDispositivo } from '../../services/notificacoes';
 
 type Props = { onLogin: (username: string) => void };
 
@@ -30,6 +31,9 @@ export default function Login({ onLogin }: Props) {
       setErro('');
       setCarregando(true);
       await loginApi(email.trim(), senha);
+      registrarDispositivo()
+        .then(() => console.log('Dispositivo registrado com sucesso!'))
+        .catch((error) => console.error('Erro ao registrar dispositivo:', error));
       onLogin(email.trim());
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível entrar.');

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921741418959",
+    "project_id": "easy-eats-app-1419f",
+    "storage_bucket": "easy-eats-app-1419f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921741418959:android:783580b285f4b42f3832ba",
+        "android_client_info": {
+          "package_name": "com.easyeats.easyeats_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYCtCYfqk6gDdQTUmqKSkJeX7lOMP02xw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
