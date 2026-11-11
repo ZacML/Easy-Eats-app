@@ -22,6 +22,7 @@ import type { Produto } from '../../types/produto';
 import type { Categoria } from '../../types/categoria';
 import type { Mesa } from '../../types/mesa';
 import FiltroChips from '../../components/FiltroChips';
+import { useToast } from '../../components/Toast';
 
 type Props = { usuario?: string; onSair?: () => void; onAbrirFila?: () => void };
 
@@ -100,13 +101,11 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
 
   const qtdTotal = itens.reduce((total, p) => total + carrinho[p.id], 0);
   const total = itens.reduce((sum, p) => sum + carrinho[p.id] * p.preco, 0);
+  const { toast, mostrarToast } = useToast();
 
   async function finalizar() {
     if (mesaSelecionada == null) {
-      Alert.alert(
-        'Atenção',
-        'Selecione uma mesa.'
-      );
+      mostrarToast('Pedido enviado para a cozinha.');
 
       return;
     }
@@ -132,9 +131,9 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
       setMesaSelecionada(null);
       setMesaAberta(false);
       setCliente('');
-      Alert.alert('Sucesso', 'Pedido enviado para a cozinha.');
+      mostrarToast('Pedido enviado para a cozinha.');
     } catch (e) {
-      Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível criar o pedido.');
+      mostrarToast(e instanceof Error ? e.message : 'Não foi possível criar o pedido.');
     } finally {
       setEnviando(false);
     }
@@ -375,6 +374,8 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
           </TouchableOpacity>
         </View>
       )}
+
+      {toast}
     </View>
   );
 }

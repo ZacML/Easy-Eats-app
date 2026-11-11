@@ -1,5 +1,5 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import {
   type FalhaBiometria,
 } from '../../services/biometria';
 import { styles, LARANJA } from './styles';
+import DialogoConfirmacao from '../../components/DialogoConfirmacao';
 import { registrarDispositivo } from '../../services/notificacoes';
 
 type Props = { onLogin: (username: string) => void };
@@ -33,19 +34,19 @@ const MENSAGENS_FALHA: Partial<Record<FalhaBiometria, string>> = {
   erro: 'Não foi possível usar a digital. Tente novamente ou entre com usuário e senha.',
 };
 
-function perguntarDigital(): Promise<boolean> {
-  return new Promise((resolve) => {
-    Alert.alert(
-      'Impressão digital',
-      'Quer acessar o Easy-Eats usando sua impressão digital?',
-      [
-        { text: 'Agora não', style: 'cancel', onPress: () => resolve(false) },
-        { text: 'Sim, habilitar', onPress: () => resolve(true) },
-      ],
-      { cancelable: true, onDismiss: () => resolve(false) },
-    );
-  });
-}
+// -function perguntarDigital(): Promise<boolean> {
+// -  return new Promise((resolve) => {
+// -    Alert.alert(
+// -      'Impressão digital',
+// -      'Quer acessar o Easy-Eats usando sua impressão digital?',
+// -      [
+// -        { text: 'Agora não', style: 'cancel', onPress: () => resolve(false) },
+// -        { text: 'Sim, habilitar', onPress: () => resolve(true) },
+// -      ],
+// -      { cancelable: true, onDismiss: () => resolve(false) },
+// -    );
+// -  });
+// -}
 
 export default function Login({ onLogin }: Props) {
   const [email, setEmail] = useState('');
@@ -54,6 +55,22 @@ export default function Login({ onLogin }: Props) {
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [modo, setModo] = useState<'carregando' | 'biometria' | 'senha'>('carregando');
+  const [dialogoDigital, setDialogoDigital] = useState(false);
+  const respostaDigital = useRef<((sim: boolean) => void) | null>(null);
+
+  function perguntarDigital() {
+    return new Promise<boolean>((resolve) => {
+      respostaDigital.current = resolve;
+      setDialogoDigital(true);
+    });
+  }
+
+  function responderDigital(sim: boolean) {
+    setDialogoDigital(false);
+    respostaDigital.current?.(sim);
+    respostaDigital.current = null;
+  }
+
 
   useEffect(() => {
     biometriaHabilitada().then((ativa) => setModo(ativa ? 'biometria' : 'senha'));
@@ -227,6 +244,17 @@ export default function Login({ onLogin }: Props) {
         </TouchableOpacity>
       </View>
       ) : null}
+
+      <DialogoConfirmacao
+        visivel={dialogoDigital}
+        icone={(p) => <Ionicons name="finger-print" {...p} />}
+        titulo="Entrar com sua digital?"
+        mensagem="Quer acessar o Easy-Eats usando sua impressão digital? Nos próximos acessos você entra sem digitar usuário e senha."
+        textoConfirmar="Sim, habilitar"
+        textoCancelar="Agora não"
+        onConfirmar={() => responderDigital(true)}
+        onCancelar={() => responderDigital(false)}
+      />
     </ScrollView>
   );
 }

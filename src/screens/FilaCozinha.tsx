@@ -7,6 +7,7 @@ import { styles } from './styles';
 import type { Pedido, StatusPedido } from '../types/pedido';
 import type { Produto } from '../types/produto';
 import FiltroChips from '../components/FiltroChips';
+import DialogoConfirmacao from '../components/DialogoConfirmacao';
 
 
 type Props = {
@@ -52,6 +53,7 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
   const emAndamento = useRef(false);
   const [temMais, setTemMais] = useState<Partial<Record<Coluna, boolean>>>({});
   const [carregandoMais, setCarregandoMais] = useState<Coluna | null>(null);
+  const [pedidoParaCancelar, setPedidoParaCancelar] = useState<Pedido | null>(null);
 
   async function alterarStatus(pedido: Pedido, novoStatus: StatusPedido) {
     if (emAndamento.current) return;
@@ -103,17 +105,29 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
     }
   }
 
-  function confirmarCancelamento(pedido: Pedido) {
-    if (emAndamento.current) return;
+  // function confirmarCancelamento(pedido: Pedido) {
+  //   if (emAndamento.current) return;
 
-    Alert.alert('Cancelar pedido', 'Deseja realmente cancelar este pedido?', [
-      { text: 'Cancelar ação', style: 'cancel' },
-      {
-        text: 'Confirmar cancelamento',
-        style: 'destructive',
-        onPress: () => alterarStatus(pedido, 'CANCELADO'),
-      },
-    ]);
+  //   Alert.alert('Cancelar pedido', 'Deseja realmente cancelar este pedido?', [
+  //     { text: 'Cancelar ação', style: 'cancel' },
+  //     {
+  //       text: 'Confirmar cancelamento',
+  //       style: 'destructive',
+  //       onPress: () => alterarStatus(pedido, 'CANCELADO'),
+  //     },
+  //   ]);
+  // }
+
+    function confirmarCancelamento(pedido: Pedido) {
+    if (emAndamento.current) return;
+    setPedidoParaCancelar(pedido);
+  }
+
+  function cancelarPedidoConfirmado() {
+    if (!pedidoParaCancelar) return;
+    const pedido = pedidoParaCancelar;
+    setPedidoParaCancelar(null);
+    alterarStatus(pedido, 'CANCELADO');
   }
 
   const carregar = useCallback(async () => {
@@ -306,6 +320,19 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
           })
         )}
       </ScrollView>
+
+      <DialogoConfirmacao
+        visivel={pedidoParaCancelar != null}
+        variante="perigo"
+        icone={(p) => <Feather name="alert-triangle" {...p} />}
+        titulo="Cancelar pedido?"
+        mensagem="Deseja realmente cancelar este pedido? O status dele será alterado para Cancelado."
+        textoConfirmar="Confirmar cancelamento"
+        textoCancelar="Voltar"
+        onConfirmar={cancelarPedidoConfirmado}
+        onCancelar={() => setPedidoParaCancelar(null)}
+      />
+
     </SafeAreaView>
   );
 }
