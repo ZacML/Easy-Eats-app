@@ -26,10 +26,11 @@
     "plugins": [
       "expo-status-bar",
       "expo-font",
+      "expo-secure-store",
       [
-        "expo-notifications", 
-        { 
-          "color": "#EA580C" 
+        "expo-notifications",
+        {
+          "color": "#EA580C"
         }
       ]
     ],

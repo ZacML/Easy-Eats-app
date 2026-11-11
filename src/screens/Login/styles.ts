@@ -60,4 +60,16 @@ export const styles = StyleSheet.create({
     marginTop: 24,
   },
   botaoTexto: { fontSize: 15, fontWeight: "600", color: "#fff" },
+    bio: { alignItems: "center", paddingTop: 24 },
+  botaoDigital: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: LARANJA,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  bioTexto: { marginTop: 14, fontSize: 14, color: "#64748B" },
+  link: { marginTop: 36, fontSize: 14, fontWeight: "600", color: "#64748B" },
 });

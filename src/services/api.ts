@@ -6,6 +6,16 @@ import type { Mesa } from '../types/mesa';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.0.107:8080';
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function atualizarStatusPedido(id: number, status: StatusPedido) {
   return request<Pedido>(`/pedido/${id}/status/${status}`, {
     method: 'PATCH',
@@ -39,7 +49,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const mensagem = await response.text();
-    throw new Error(mensagem || `Erro HTTP ${response.status}`);
+    throw new ApiError(response.status, mensagem || `Erro HTTP ${response.status}`);
   }
 
   return response.json();
@@ -69,6 +79,25 @@ export async function login(
 
 export function logout() {
   token = null;
+}
+
+export function setToken(novoToken: string) {
+  token = novoToken;
+}
+
+// Confirma na API se o token ainda vale. Retorna false só para 401/403;
+// falha de rede ou 5xx lança erro para quem chamou decidir (sem apagar a digital).
+export async function validarSessao(): Promise<boolean> {
+  try {
+    await request<unknown>('/mesa'); //arrumar
+    return true;
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+      token = null;
+      return false;
+    }
+    throw e;
+  }
 }
 
 export async function listarCategorias(): Promise<Categoria[]> {
