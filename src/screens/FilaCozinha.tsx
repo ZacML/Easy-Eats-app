@@ -7,6 +7,7 @@ import { styles } from './styles';
 import type { Pedido, StatusPedido } from '../types/pedido';
 import type { Produto } from '../types/produto';
 import FiltroChips from '../components/FiltroChips';
+import DialogoConfirmacao from '../components/DialogoConfirmacao';
 
 
 type Props = {
@@ -52,6 +53,7 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
   const emAndamento = useRef(false);
   const [temMais, setTemMais] = useState<Partial<Record<Coluna, boolean>>>({});
   const [carregandoMais, setCarregandoMais] = useState<Coluna | null>(null);
+  const [pedidoParaCancelar, setPedidoParaCancelar] = useState<Pedido | null>(null);
 
   async function alterarStatus(pedido: Pedido, novoStatus: StatusPedido) {
     if (emAndamento.current) return;
@@ -67,10 +69,7 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
           : atual.map((p) => (p.id === pedido.id ? movido : p));
       });
     } catch (e) {
-      Alert.alert(
-        'Erro',
-        e instanceof Error ? e.message : 'Não foi possível atualizar o status do pedido.',
-      );
+      setErro(e instanceof Error ? e.message : 'Não foi possível atualizar o status do pedido.',);
     } finally {
       emAndamento.current = false;
       setAtualizandoId(null);
@@ -96,7 +95,7 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
         [status]: novos.length === LIMITE_HISTORICO && inéditos.length > 0,
       }));
     } catch (e) {
-      Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível carregar mais pedidos.');
+      setErro(e instanceof Error ? e.message : 'Não foi possível carregar mais pedidos.');
     } finally {
       emAndamento.current = false;
       setCarregandoMais(null);
@@ -105,15 +104,14 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
 
   function confirmarCancelamento(pedido: Pedido) {
     if (emAndamento.current) return;
+    setPedidoParaCancelar(pedido);
+  }
 
-    Alert.alert('Cancelar pedido', 'Deseja realmente cancelar este pedido?', [
-      { text: 'Cancelar ação', style: 'cancel' },
-      {
-        text: 'Confirmar cancelamento',
-        style: 'destructive',
-        onPress: () => alterarStatus(pedido, 'CANCELADO'),
-      },
-    ]);
+  function cancelarPedidoConfirmado() {
+    if (!pedidoParaCancelar) return;
+    const pedido = pedidoParaCancelar;
+    setPedidoParaCancelar(null);
+    alterarStatus(pedido, 'CANCELADO');
   }
 
   const carregar = useCallback(async () => {
@@ -306,6 +304,19 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
           })
         )}
       </ScrollView>
+
+      <DialogoConfirmacao
+        visivel={pedidoParaCancelar != null}
+        variante="perigo"
+        icone={(p) => <Feather name="alert-triangle" {...p} />}
+        titulo="Cancelar pedido?"
+        mensagem="Deseja realmente cancelar este pedido? O status dele será alterado para Cancelado."
+        textoConfirmar="Confirmar cancelamento"
+        textoCancelar="Voltar"
+        onConfirmar={cancelarPedidoConfirmado}
+        onCancelar={() => setPedidoParaCancelar(null)}
+      />
+
     </SafeAreaView>
   );
 }
