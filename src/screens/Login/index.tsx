@@ -34,20 +34,6 @@ const MENSAGENS_FALHA: Partial<Record<FalhaBiometria, string>> = {
   erro: 'Não foi possível usar a digital. Tente novamente ou entre com usuário e senha.',
 };
 
-// -function perguntarDigital(): Promise<boolean> {
-// -  return new Promise((resolve) => {
-// -    Alert.alert(
-// -      'Impressão digital',
-// -      'Quer acessar o Easy-Eats usando sua impressão digital?',
-// -      [
-// -        { text: 'Agora não', style: 'cancel', onPress: () => resolve(false) },
-// -        { text: 'Sim, habilitar', onPress: () => resolve(true) },
-// -      ],
-// -      { cancelable: true, onDismiss: () => resolve(false) },
-// -    );
-// -  });
-// -}
-
 export default function Login({ onLogin }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');

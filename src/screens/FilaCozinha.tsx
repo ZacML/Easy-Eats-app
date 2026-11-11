@@ -69,10 +69,7 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
           : atual.map((p) => (p.id === pedido.id ? movido : p));
       });
     } catch (e) {
-      Alert.alert(
-        'Erro',
-        e instanceof Error ? e.message : 'Não foi possível atualizar o status do pedido.',
-      );
+      setErro(e instanceof Error ? e.message : 'Não foi possível atualizar o status do pedido.',);
     } finally {
       emAndamento.current = false;
       setAtualizandoId(null);
@@ -98,27 +95,14 @@ export default function FilaCozinha({ onVoltar, onSair }: Props) {
         [status]: novos.length === LIMITE_HISTORICO && inéditos.length > 0,
       }));
     } catch (e) {
-      Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível carregar mais pedidos.');
+      setErro(e instanceof Error ? e.message : 'Não foi possível carregar mais pedidos.');
     } finally {
       emAndamento.current = false;
       setCarregandoMais(null);
     }
   }
 
-  // function confirmarCancelamento(pedido: Pedido) {
-  //   if (emAndamento.current) return;
-
-  //   Alert.alert('Cancelar pedido', 'Deseja realmente cancelar este pedido?', [
-  //     { text: 'Cancelar ação', style: 'cancel' },
-  //     {
-  //       text: 'Confirmar cancelamento',
-  //       style: 'destructive',
-  //       onPress: () => alterarStatus(pedido, 'CANCELADO'),
-  //     },
-  //   ]);
-  // }
-
-    function confirmarCancelamento(pedido: Pedido) {
+  function confirmarCancelamento(pedido: Pedido) {
     if (emAndamento.current) return;
     setPedidoParaCancelar(pedido);
   }
