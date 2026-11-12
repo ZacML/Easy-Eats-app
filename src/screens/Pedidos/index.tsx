@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,39 +8,49 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import {
   criarPedido,
   listarCategorias,
   listarProdutos,
   listarMesas,
   logout,
-} from '../../services/api';
-import { styles, LARANJA } from './styles';
-import type { Produto } from '../../types/produto';
-import type { Categoria } from '../../types/categoria';
-import type { Mesa } from '../../types/mesa';
-import FiltroChips from '../../components/FiltroChips';
-import { useToast } from '../../components/Toast';
+  ApiError,
+  validarEstoque,
+} from "../../services/api";
+import { styles, LARANJA } from "./styles";
+import type { Produto } from "../../types/produto";
+import type { Categoria } from "../../types/categoria";
+import type { Mesa } from "../../types/mesa";
+import FiltroChips from "../../components/FiltroChips";
+import { useToast } from "../../components/Toast";
 
-type Props = { usuario?: string; onSair?: () => void; onAbrirFila?: () => void };
+type Props = {
+  usuario?: string;
+  onSair?: () => void;
+  onAbrirFila?: () => void;
+};
 
+const moeda = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
-const moeda = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+const MSG_SEM_ESTOQUE = "Não há estoque suficiente para realizar a venda.";
 
-export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
+export default function Pedidos({ usuario = "", onSair, onAbrirFila }: Props) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState<number | null>(null);
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<
+    number | null
+  >(null);
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [mesaSelecionada, setMesaSelecionada] = useState<number | null>(null);
   const [mesaAberta, setMesaAberta] = useState(false);
-  const [cliente, setCliente] = useState('');
+  const [cliente, setCliente] = useState("");
   const [carrinho, setCarrinho] = useState<Record<number, number>>({});
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState("");
+  const validandoEstoque = useRef(false);
 
   useEffect(() => {
     carregarProdutos();
@@ -48,14 +58,10 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
 
   async function carregarProdutos() {
     try {
-      setErro('');
+      setErro("");
       setCarregando(true);
 
-      const [
-        produtosApi,
-        categoriasApi,
-        mesasApi,
-      ] = await Promise.all([
+      const [produtosApi, categoriasApi, mesasApi] = await Promise.all([
         listarProdutos(),
         listarCategorias(),
         listarMesas(),
@@ -64,20 +70,48 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
       setProdutos(produtosApi);
       setCategorias(categoriasApi);
       setMesas(mesasApi);
-
     } catch (e) {
-
       setErro(
-        e instanceof Error
-          ? e.message
-          : 'Não foi possível carregar os dados.'
+        e instanceof Error ? e.message : "Não foi possível carregar os dados.",
       );
     } finally {
       setCarregando(false);
     }
   }
 
-  function mudar(id: number, delta: number) {
+  async function mudar(id: number, delta: number) {
+    if (delta > 0) {
+      if (validandoEstoque.current) return;
+
+      if (produtos.find((p) => p.id === id)?.semEstoque) {
+        mostrarToast(MSG_SEM_ESTOQUE, true);
+        return;
+      }
+
+      // carrinho atual + 1 unidade, validado pela mesma regra da API
+      validandoEstoque.current = true;
+      try {
+        await validarEstoque(
+          Object.entries({ ...carrinho, [id]: (carrinho[id] ?? 0) + 1 }).map(
+            ([produtoId, quantidade]) => ({
+              produtoId: Number(produtoId),
+              quantidade,
+            }),
+          ),
+        );
+      } catch (e) {
+        mostrarToast(
+          e instanceof ApiError && e.status === 422
+            ? MSG_SEM_ESTOQUE
+            : "Não foi possível verificar o estoque.",
+          true,
+        );
+        return;
+      } finally {
+        validandoEstoque.current = false;
+      }
+    }
+
     setCarrinho((atual) => {
       const qtd = Math.max(0, (atual[id] ?? 0) + delta);
       const novo = { ...atual };
@@ -88,9 +122,10 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
   }
 
   const produtosFiltrados = useMemo(
-    () => categoriaSelecionada == null
-      ? produtos
-      : produtos.filter((p) => p.categoriaId === categoriaSelecionada),
+    () =>
+      categoriaSelecionada == null
+        ? produtos
+        : produtos.filter((p) => p.categoriaId === categoriaSelecionada),
     [produtos, categoriaSelecionada],
   );
 
@@ -105,13 +140,13 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
 
   async function finalizar() {
     if (mesaSelecionada == null) {
-      mostrarToast('Pedido enviado para a cozinha.');
+      mostrarToast("Pedido enviado para a cozinha.");
 
       return;
     }
 
     if (!itens.length) {
-      Alert.alert('Atenção', 'Adicione pelo menos um produto.');
+      Alert.alert("Atenção", "Adicione pelo menos um produto.");
       return;
     }
 
@@ -130,10 +165,12 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
       setCarrinho({});
       setMesaSelecionada(null);
       setMesaAberta(false);
-      setCliente('');
-      mostrarToast('Pedido enviado para a cozinha.');
+      setCliente("");
+      mostrarToast("Pedido enviado para a cozinha.");
     } catch (e) {
-      mostrarToast(e instanceof Error ? e.message : 'Não foi possível criar o pedido.');
+      mostrarToast(
+        e instanceof Error ? e.message : "Não foi possível criar o pedido.",
+      );
     } finally {
       setEnviando(false);
     }
@@ -147,7 +184,9 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
         <Text style={styles.marca}>EasyEats</Text>
         <View style={styles.barraDireita}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarTexto}>{usuario ? usuario.charAt(0).toUpperCase() : '?'}</Text>
+            <Text style={styles.avatarTexto}>
+              {usuario ? usuario.charAt(0).toUpperCase() : "?"}
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.botaoIcone}
@@ -161,22 +200,26 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
-
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 6,
-        }}>
+      <ScrollView
+        contentContainerStyle={styles.conteudo}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 6,
+          }}
+        >
           <Text style={styles.titulo}>Novo Pedido</Text>
 
           <TouchableOpacity
             onPress={onAbrirFila}
             disabled={!onAbrirFila}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: "row",
+              alignItems: "center",
               backgroundColor: LARANJA,
               paddingHorizontal: 12,
               paddingVertical: 10,
@@ -185,9 +228,7 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
             }}
           >
             <Feather name="clipboard" size={17} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>
-              Fila
-            </Text>
+            <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Fila</Text>
           </TouchableOpacity>
         </View>
 
@@ -195,18 +236,13 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
           Produtos carregados diretamente da API.
         </Text>
 
-
         <View style={styles.comboboxContainer}>
-
-          <Text style={styles.comboboxLabel}>
-            Mesa
-          </Text>
+          <Text style={styles.comboboxLabel}>Mesa</Text>
 
           <TouchableOpacity
             style={styles.combobox}
             onPress={() => setMesaAberta(!mesaAberta)}
           >
-
             <Text
               style={[
                 styles.comboboxTexto,
@@ -214,60 +250,40 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
               ]}
             >
               {mesaSelecionada == null
-                ? 'Selecione uma mesa'
-                : `Mesa ${mesas.find(
-                  (mesa) => mesa.id === mesaSelecionada
-                )?.numero
-                }`
-              }
+                ? "Selecione uma mesa"
+                : `Mesa ${
+                    mesas.find((mesa) => mesa.id === mesaSelecionada)?.numero
+                  }`}
             </Text>
 
             <Feather
-              name={mesaAberta ? 'chevron-up' : 'chevron-down'}
+              name={mesaAberta ? "chevron-up" : "chevron-down"}
               size={20}
               color="#64748B"
             />
-
           </TouchableOpacity>
 
-
           {mesaAberta && (
-
             <View style={styles.listaMesas}>
-
               {mesas.length === 0 ? (
-
-                <Text style={styles.semMesas}>
-                  Nenhuma mesa cadastrada.
-                </Text>
-
+                <Text style={styles.semMesas}>Nenhuma mesa cadastrada.</Text>
               ) : (
-
                 mesas.map((mesaItem) => (
-
                   <TouchableOpacity
                     key={mesaItem.id}
                     style={[
                       styles.opcaoMesa,
                       mesaSelecionada === mesaItem.id &&
-                      styles.opcaoMesaSelecionada,
+                        styles.opcaoMesaSelecionada,
                     ]}
                     onPress={() => {
-
-                      setMesaSelecionada(
-                        mesaItem.id
-                      );
+                      setMesaSelecionada(mesaItem.id);
 
                       setMesaAberta(false);
                     }}
                   >
-
                     <View style={styles.mesaIcone}>
-                      <Feather
-                        name="grid"
-                        size={16}
-                        color={LARANJA}
-                      />
+                      <Feather name="grid" size={16} color={LARANJA} />
                     </View>
 
                     <Text style={styles.opcaoMesaTexto}>
@@ -275,23 +291,13 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
                     </Text>
 
                     {mesaSelecionada === mesaItem.id && (
-                      <Feather
-                        name="check"
-                        size={18}
-                        color={LARANJA}
-                      />
+                      <Feather name="check" size={18} color={LARANJA} />
                     )}
-
                   </TouchableOpacity>
-
                 ))
-
               )}
-
             </View>
-
           )}
-
         </View>
 
         <TextInput
@@ -301,7 +307,7 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
           placeholder="Nome do cliente (opcional)"
         />
 
-        {erro !== '' && (
+        {erro !== "" && (
           <View style={styles.erroBox}>
             <Text style={styles.erro}>{erro}</Text>
             <TouchableOpacity onPress={carregarProdutos}>
@@ -319,7 +325,11 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
         )}
 
         {carregando ? (
-          <ActivityIndicator size="large" color={LARANJA} style={{ marginTop: 32 }} />
+          <ActivityIndicator
+            size="large"
+            color={LARANJA}
+            style={{ marginTop: 32 }}
+          />
         ) : produtos.length === 0 ? (
           <Text style={styles.vazio}>Nenhum produto ativo encontrado.</Text>
         ) : produtosFiltrados.length === 0 ? (
@@ -330,7 +340,14 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
               const qtd = carrinho[p.id] ?? 0;
 
               return (
-                <View key={p.id} style={[styles.card, qtd > 0 && { borderColor: LARANJA }]}>
+                <View
+                  key={p.id}
+                  style={[
+                    styles.card,
+                    qtd > 0 && { borderColor: LARANJA },
+                    p.semEstoque && styles.cardSemEstoque,
+                  ]}
+                >
                   <TouchableOpacity onPress={() => mudar(p.id, 1)}>
                     <Text style={styles.nome}>{p.nome}</Text>
                     <Text style={styles.descricao}>{p.descricao}</Text>
@@ -338,7 +355,11 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
                   </TouchableOpacity>
 
                   <View style={styles.cardBase}>
-                    {qtd > 0 ? (
+                    {p.semEstoque ? (
+                      <TouchableOpacity onPress={() => mudar(p.id, 1)}>
+                        <Text style={styles.semEstoque}>Sem estoque</Text>
+                      </TouchableOpacity>
+                    ) : qtd > 0 ? (
                       <View style={styles.stepper}>
                         <TouchableOpacity onPress={() => mudar(p.id, -1)}>
                           <Feather name="minus" size={18} color={LARANJA} />
@@ -366,11 +387,19 @@ export default function Pedidos({ usuario = '', onSair, onAbrirFila }: Props) {
       {qtdTotal > 0 && (
         <View style={styles.rodape}>
           <View>
-            <Text style={styles.resumoQtd}>{qtdTotal} {qtdTotal === 1 ? 'item' : 'itens'}</Text>
+            <Text style={styles.resumoQtd}>
+              {qtdTotal} {qtdTotal === 1 ? "item" : "itens"}
+            </Text>
             <Text style={styles.resumoTotal}>{moeda(total)}</Text>
           </View>
-          <TouchableOpacity style={styles.botaoFinalizar} onPress={finalizar} disabled={enviando}>
-            <Text style={styles.botaoFinalizarTexto}>{enviando ? 'Enviando...' : 'Finalizar pedido'}</Text>
+          <TouchableOpacity
+            style={styles.botaoFinalizar}
+            onPress={finalizar}
+            disabled={enviando}
+          >
+            <Text style={styles.botaoFinalizarTexto}>
+              {enviando ? "Enviando..." : "Finalizar pedido"}
+            </Text>
           </TouchableOpacity>
         </View>
       )}

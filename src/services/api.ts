@@ -1,33 +1,31 @@
-import type { LoginResponse } from '../types/auth';
-import type { Produto } from '../types/produto';
-import type { Pedido, StatusPedido, PaginaPedidos } from '../types/pedido';
-import type { Categoria } from '../types/categoria';
-import type { Mesa } from '../types/mesa';
+import type { LoginResponse } from "../types/auth";
+import type { Produto } from "../types/produto";
+import type { Pedido, StatusPedido, PaginaPedidos } from "../types/pedido";
+import type { Categoria } from "../types/categoria";
+import type { Mesa } from "../types/mesa";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.0.107:8080';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://192.168.0.107:8080";
 
 export class ApiError extends Error {
   status: number;
 
   constructor(status: number, message: string) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
   }
 }
 
 export async function atualizarStatusPedido(id: number, status: StatusPedido) {
   return request<Pedido>(`/pedido/${id}/status/${status}`, {
-    method: 'PATCH',
+    method: "PATCH",
   });
 }
 
 export async function listarMesas(): Promise<Mesa[]> {
-  const mesas = await request<Mesa[]>('/mesa');
+  const mesas = await request<Mesa[]>("/mesa");
 
-  return mesas.filter(
-    (mesa) => mesa.flativo === 'S'
-  );
+  return mesas.filter((mesa) => mesa.flativo === "S");
 }
 
 let token: string | null = null;
@@ -35,7 +33,7 @@ let token: string | null = null;
 function authHeaders() {
   return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 }
 
@@ -49,7 +47,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const mensagem = await response.text();
-    throw new ApiError(response.status, mensagem || `Erro HTTP ${response.status}`);
+    throw new ApiError(
+      response.status,
+      mensagem || `Erro HTTP ${response.status}`,
+    );
   }
 
   return response.json();
@@ -60,16 +61,16 @@ export async function login(
   password: string,
 ): Promise<LoginResponse> {
   const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({ username, password }).toString(),
   });
 
   if (!response.ok) {
     const mensagem = await response.text();
-    throw new Error(mensagem || 'Falha no login.');
+    throw new Error(mensagem || "Falha no login.");
   }
 
   token = (await response.text()).trim();
@@ -89,7 +90,7 @@ export function setToken(novoToken: string) {
 // falha de rede ou 5xx lança erro para quem chamou decidir (sem apagar a digital).
 export async function validarSessao(): Promise<boolean> {
   try {
-    await request<unknown>('/mesa'); //arrumar
+    await request<unknown>("/mesa"); //arrumar
     return true;
   } catch (e) {
     if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
@@ -101,15 +102,18 @@ export async function validarSessao(): Promise<boolean> {
 }
 
 export async function listarCategorias(): Promise<Categoria[]> {
-  const categorias = await request<Categoria[]>('/categorias');
-  return categorias.filter((categoria) => categoria.flativo === 'S');
+  const categorias = await request<Categoria[]>("/categorias");
+  return categorias.filter((categoria) => categoria.flativo === "S");
 }
 
 export async function listarProdutos(): Promise<Produto[]> {
-  const [produtosResponse, precosResponse] = await Promise.all([
-    request<any[]>('/produto'),
-    request<any[]>('/preco'),
+  const [produtosResponse, precosResponse, idsSemEstoque] = await Promise.all([
+    request<any[]>("/produto"),
+    request<any[]>("/preco"),
+    request<number[]>("/estoques/produtos-sem-estoque"),
   ]);
+
+  const semEstoque = new Set(idsSemEstoque.map(Number));
 
   const precos = new Map<number, number>(
     precosResponse.map((p) => [Number(p.produtoId), Number(p.valor)]),
@@ -120,9 +124,10 @@ export async function listarProdutos(): Promise<Produto[]> {
     .map((p) => ({
       id: Number(p.id),
       nome: p.nome,
-      descricao: p.descricao ?? '',
+      descricao: p.descricao ?? "",
       preco: precos.get(Number(p.id)) ?? 0,
       categoriaId: Number(p.categoriaId),
+      semEstoque: semEstoque.has(Number(p.id)),
     }));
 }
 
@@ -131,8 +136,8 @@ export async function criarPedido(
   cliente: string,
   itens: { produtoId: number; quantidade: number }[],
 ) {
-  return request<Pedido>('/pedido', {
-    method: 'POST',
+  return request<Pedido>("/pedido", {
+    method: "POST",
     body: JSON.stringify({
       mesaId,
       cliente,
@@ -141,18 +146,30 @@ export async function criarPedido(
   });
 }
 
-export async function listarPedidos(status?: StatusPedido, antesDe?: string): Promise<Pedido[]> {
+export async function listarPedidos(
+  status?: StatusPedido,
+  antesDe?: string,
+): Promise<Pedido[]> {
   const params = new URLSearchParams();
-  if (status) params.set('status', status);
-  if (antesDe) params.set('antesDe', antesDe);
+  if (status) params.set("status", status);
+  if (antesDe) params.set("antesDe", antesDe);
   const query = params.toString();
 
-  return request<Pedido[]>(`/pedido${query ? `?${query}` : ''}`);
+  return request<Pedido[]>(`/pedido${query ? `?${query}` : ""}`);
 }
 
 export async function registrarPushToken(pushToken: string) {
-  await request<unknown>('/dispositivos/push-token', {
-    method: 'POST',
+  await request<unknown>("/dispositivos/push-token", {
+    method: "POST",
     body: JSON.stringify({ token: pushToken }),
+  });
+}
+
+export async function validarEstoque(
+  itens: { produtoId: number; quantidade: number }[],
+) {
+  await request<unknown>("/pedido/validar-estoque", {
+    method: "POST",
+    body: JSON.stringify(itens),
   });
 }

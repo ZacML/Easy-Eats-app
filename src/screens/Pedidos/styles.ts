@@ -1,7 +1,7 @@
 import { StyleSheet, Platform, StatusBar } from "react-native";
 
-export const LARANJA = '#EA580C';
-const TOPO = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 50;
+export const LARANJA = "#EA580C";
+const TOPO = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 50;
 
 export const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: "#F8FAFC" },
@@ -225,4 +225,6 @@ export const styles = StyleSheet.create({
 
     fontSize: 13,
   },
+  cardSemEstoque: { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" },
+  semEstoque: { color: "#B91C1C", fontSize: 12, fontWeight: "700" },
 });

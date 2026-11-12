@@ -4,4 +4,5 @@ export type Produto = {
   descricao: string;
   preco: number;
   categoriaId: number;
+  semEstoque: boolean;
 };
